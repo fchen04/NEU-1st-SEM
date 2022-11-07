@@ -1,0 +1,234 @@
+(require 2htdp/image)
+(require 2htdp/universe)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Problem 1
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; You are going to make yourself a useful interactive app: flash cards
+; (https://en.wikipedia.org/wiki/Flashcard).
+
+; To begin, consider the following data definition...
+
+
+(define-struct flashcard [front back])
+
+; A FlashCard is a (make-flashcard String String)
+; Interpretation: the front and back of a card
+; - front is the front of the flashcard
+; - back is the back of the flashcard
+
+(define FLASH-1 (make-flashcard "front" "back"))
+(define FLASH-2 (make-flashcard "lemon" "yellow"))
+(define FLASH-3 (make-flashcard "apple" "red"))
+
+(define (flashcard-temp f)
+  (... (flashcard-front f) ...
+       (flashcard-back f)...))
+
+       
+; TODO 1/4: Complete the design recipe for FlashCard.
+
+
+; Now a single flash card wouldn't be super useful, and so...
+
+; TODO 2/4: Design ListOfFlashCard (LoFC) to support an arbitrarily sized
+;           sequence of flash cards. Importantly...
+;           - These should be proper lists (i.e., using cons and '()).
+;           - Make sure to give yourself a few example lists, of different sizes;
+;             hopefully they are useful in your classes!
+;           - Remember that your LoFC template should reflect that your list
+;             elements are themselves designed types (FlashCard).
+
+
+; A ListOfFlashCard is one of
+; - '()
+; - (cons flashcard LoFC)
+; Interpretation : a list of flashcards
+
+(define LOFC-0 '())
+(define LOFC-1 (cons FLASH-1 LOFC-0))
+(define LOFC-2 (cons FLASH-2 LOFC-1))
+(define LOFC-3 (cons FLASH-3 LOFC-2))
+
+(define (lofc-temp lofc)
+  (...
+   (cond
+     [(empty? lofc) ...]
+     [(cons? lofc) ...
+      (flashcard-temp (first lofc)) ...
+      (lofc-temp (rest lofc)) ...])))
+
+; Now, for practice...
+
+; TODO 3/4: Design the function has-text?, which determines if a list of flash
+;           cards contains any card that contains a supplied text.
+;
+;           Hint: the string-contains? function is very useful for determining
+;           if one string contains another :)
+
+
+; has-text? : ListOfFlashCard String -> Boolean
+; given a list of flashcards, determines if any card contains a supplied text
+
+(check-expect (has-text? "apple" LOFC-0) #false)
+(check-expect (has-text? "front" LOFC-1) #true)
+(check-expect (has-text? "lemon" LOFC-2) #true)
+
+
+(define (has-text? s lofc)
+   (cond
+     [(empty? lofc) #false]
+     [(cons? lofc)
+      (or (string-contains? s (flashcard-check (first lofc))) (has-text? s (rest lofc)))]))
+
+
+; flashcard-check : FlashCard -> String
+; takes in a flashcard and returns the corresponding text 
+
+(define (flashcard-check f)
+  (string-append (flashcard-front f) (flashcard-back f)))
+
+
+; Finally, let's put this list to use :)
+
+; TODO 4/4: Design the program go-cards, which helps you study with a supplied list
+;           of cards. It starts on the first card and then flips it when a key is
+;           pressed, and then goes to the front of the next card when another key is
+;           pressed. The program should end when the last card has been flipped, and
+;           the go-cards function should return how many cards were in the original
+;           list. Some hints...
+;           - To get you started, you have been supplied the data definition of a
+;             way to represent the state of the program (don't forget to uncomment
+;             the structure definition and finish the design recipe for data!).
+;           - The return value of this function is a bit challenging, since the list
+;             you get at the end is empty! So uncomment the code we've given you below,
+;             but to understand: you can *add* the length of the originally supplied
+;             list to that of the (empty) final list and still get the right answer :)
+;           - Be sure to follow the templates for all your data, which will typically
+;             entail helpers for the FS, the LoFC, and the FC.
+;           - As long as the program operates as described, you are welcome to make it
+;             look as simple or as creative as you would like - we hope it helps you
+;             in your classes!! :)
+
+
+(define-struct fs [cards front?])
+
+; A FlashState (FS) is a (make-fs LoFC Boolean)
+; Interpretation: a list of cards, and whether
+; the front is face up
+
+(define FS-0 (make-fs LOFC-0 #f))
+(define FS-1 (make-fs LOFC-1 #true))
+(define FS-2 (make-fs LOFC-2 #true))
+(define FS-3 (make-fs LOFC-3 #f))
+
+
+(define (fs-temp fs)
+  (... (lofc-temp (fs-cards fs)) ...
+       (fs-front? fs) ...))
+
+
+; draw-fs : FS -> Image
+; draws the state of a flashcard
+
+(define BACKGROUND (rectangle 100 50 "solid" "white"))
+
+
+(check-expect (draw-fs FS-1) (overlay (text "front" 20 "black") BACKGROUND))
+(check-expect (draw-fs FS-2) (overlay (text "lemon" 20 "black") BACKGROUND))
+(check-expect (draw-fs FS-3) (overlay (text "red" 20 "black") BACKGROUND))
+ 
+(define (draw-fs fs)
+  (if (fs-front? fs)
+      (overlay (text (front-of-flashcard (fs-cards fs)) 20 "black") BACKGROUND)
+      (overlay (text (back-of-flashcard (fs-cards fs)) 20 "black") BACKGROUND)))
+
+; front-of-flashcard : LoFC -> Flashcard
+; returns the front of the top of the list of flashcards
+
+(check-expect (front-of-flashcard LOFC-0) "")
+(check-expect (front-of-flashcard LOFC-1) "front")
+(check-expect (front-of-flashcard LOFC-2) "lemon")
+(check-expect (front-of-flashcard LOFC-3) "apple")
+
+
+(define (front-of-flashcard lofc)
+   (cond
+     [(empty? lofc) ""]
+     [(cons? lofc) 
+      (flashcard-front (first lofc))]))
+
+; back-of-flashcard : LoFC -> Flashcard
+; returns the back of the top of the list of flashcards
+
+(check-expect (back-of-flashcard LOFC-0) "")
+(check-expect (back-of-flashcard LOFC-1) "back")
+(check-expect (back-of-flashcard LOFC-2) "yellow")
+(check-expect (back-of-flashcard LOFC-3) "red")
+
+
+(define (back-of-flashcard lofc)
+   (cond
+     [(empty? lofc) ""]
+     [(cons? lofc) 
+      (flashcard-back (first lofc))]))
+
+
+
+; flip-fs : FS KeyEvent -> FS
+; flips a flashcard based on the key pressed
+
+(check-expect (flip-fs FS-1 "up") (make-fs LOFC-1 #f))
+(check-expect (flip-fs FS-2 "up") (make-fs LOFC-2 #f))
+(check-expect (flip-fs FS-3 "up") (make-fs LOFC-2 #t))
+
+
+(define (flip-fs fs ke)
+  (if (fs-front? fs)
+      (make-fs (fs-cards fs) #f)
+      (make-fs (next-flashcard (fs-cards fs)) #t)))
+
+; next-flashcard : LoFC -> LoFC
+; returns the list of flashcards without the top card
+
+(check-expect (next-flashcard LOFC-1) LOFC-0)
+(check-expect (next-flashcard LOFC-2) LOFC-1)
+(check-expect (next-flashcard LOFC-3) LOFC-2)
+
+(define (next-flashcard lofc)
+   (cond
+     [(empty? lofc) lofc]
+     [(cons? lofc) (rest lofc)]))
+
+
+
+; done-fs? : FS -> Boolean
+; is this the end of the list of flash cards
+
+(check-expect (done-fs? FS-0) #t)
+(check-expect (done-fs? FS-1) #f)
+(check-expect (done-fs? FS-2) #f)
+(check-expect (done-fs? FS-3) #f)
+;(check-expect (done-fs? FS-4) #f)
+;(check-expect (done-fs? FS-5) #f)
+;(check-expect (done-fs? FS-6) #f)
+
+
+(define (done-fs? fs)
+  (cond
+    [(empty? (fs-cards fs)) #t]
+    [(cons? (fs-cards fs)) #f]))
+
+; go-cards : LoFC -> Nat
+; displays the cards in sequence (flip via key),
+; returning the number of cards  
+
+(define (go-cards lofc)
+  (+
+   (length lofc)
+   (length (fs-cards
+            (big-bang (make-fs lofc #t)
+              [to-draw draw-fs]
+              [on-key flip-fs]
+              [stop-when done-fs?])))))
